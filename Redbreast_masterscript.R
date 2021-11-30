@@ -295,7 +295,7 @@ ggplot(data=all.data, aes(x=PG ,group=Individual, fill=Individual)) +
   geom_density(adjust=1.5, alpha=.4)+
   theme_classic()+
   ylab("Density")+
-  xlab("Peak gape (cm)")
+  xlab("Peak gape (cm)") # use
 
 ggplot(data=all.data, aes(x=TTO ,group=Individual, fill=Individual)) +
   geom_density(adjust=1.5, alpha=.4)+
@@ -334,7 +334,7 @@ ggplot(data=all.data, aes(x=VELPG ,group=Individual, fill=Individual)) +
   geom_density(adjust=1.5, alpha=.4)+
   theme_classic()+
   ylab("Density") +
-  xlab("Velocity at peak gape (cm/s)")
+  xlab("Velocity at peak gape (cm/s)") # use
 
 
 ggplot(data=all.data, aes(x=maxVEL ,group=Individual, fill=Individual)) +
@@ -368,7 +368,7 @@ ggplot(data=all.data, aes(x=AI ,group=Individual, fill=Individual)) +
   geom_density(adjust=1.5, alpha=.4)+
   theme_classic()+
   ylab("Density")+
-  xlab("Accuracy Index")
+  xlab("Accuracy Index") # use 
 
 
 ggplot(data=all.data, aes(x=ingested_volume ,group=Individual, fill=Individual)) +
@@ -397,9 +397,6 @@ ggplot(data=all.data, aes(x=VELpreycapture ,group=Individual, fill=Individual)) 
   theme_classic()+
   ylab("Density") +
   xlab("Velocity at prey capture (cm/s)")
-
-
-
 
 
 # Coefficient of variation by individual ----
@@ -439,4 +436,95 @@ names(CV)[3] <- "LAUR03"
 names(CV)[4] <- "LAUR04"
 names(CV)[5] <- "LAUR05"
 
+# PCA 
+
+PCA_data <- data.frame()
+SL_transformed_num$Population <- as.numeric(SL_transformed$Population)
+SL_transformed_num$Individual <- as.numeric(SL_transformed$Individual)
+
+# Export data for PCA
+write_csv(SL_transformed_num,file="PCA_data_Bluegill_transformed.csv")
+
+# Read in data
+pca.data_SL <- read.csv(file = "PCA_data_Bluegill_transformed.csv")
+pca.data_SL$Population <- as.factor(all.data$Population)
+pca.data_SL$Individual <- as.factor(all.data$Individual)
+
+# Subset the feeding and locomotion variables out 
+pca.data_SL_mod <- pca.data_SL %>%
+  dplyr::select(PG_resid,TTO_resid,TTC_resid,PPROT_resid,PPROTVEL_resid,tPPROT_resid,
+                VELPG_resid,maxVEL_resid,tmaxVEL_resid,ACCPG_resid)
+
+# Run PCA 
+results_SL <- prcomp(pca.data_SL_mod,scale=TRUE)
+
+#display principal components
+comp_SL <- results_SL$x
+
+#calculate total variance explained by each principal component
+var_SL <- results_SL$sdev^2
+var_results_SL <- round(var_SL/sum(var_SL)*100,1)
+
+# Make biplot 
+biplot(results_SL,scale=0)
+
+# Save results from components analysis ad data frame (PC)
+comp.out_SL <- as.data.frame(comp_SL)
+
+# Make Individual and Population factors again 
+comp.out_SL$Population <- as.factor(all.data$Population)
+comp.out_SL$Individual <- as.factor(all.data$Individual)
+
+## quick plots of PC1 and PC2 
+autoplot(prcomp(pca.data_SL_mod),data=pca.data_SL,colour="Population",label=TRUE)
+
+# Get the PCA output and check out other stats/properties of the components 
+output.var_SL <- get_pca_var(results_SL) # get coordinates
+fviz_pca_var(results_SL)
+fviz_eig(results_SL) # skree plot : pc under 10% difference between components not as important 
+
+# get the loading scores for each component. In prcomp(), loading scores are referred to as "rotation"
+load.score_SL <- results_SL$rotation[,2] # loading by PC of choice
+variable.score_SL <- abs(load.score_SL) # magnitude of loadings
+ranked.score_SL <- sort(variable.score_SL,decreasing=TRUE)
+top.ten_SL <- names(ranked.score_SL[1:10])
+corrplot(output.var_SL$cos2,is.corr=TRUE) # See what variables are explaining variation 
+corrplot(output.var_SL$contrib,is.corr=FALSE)
+fviz_contrib(results_SL, choice="var",axes=1, top=10) # See what variables are explaining variation 
+fviz_contrib(results_SL, choice="var",axes=2, top=10)
+
+## Graph 
+# Rename the factors 
+levels(comp.out_SL$Population) <- c("Healthy","Damaged")
+
+# Add in "success" data 
+comp.out_SL$Miss <- data$Miss
+
+ggplot(comp.out_SL,aes(x=PC1,y=PC2,color=Population,shape=Population,group=Population)) +
+  geom_point()+
+  scale_color_brewer(palette="Paired")+
+  theme_classic()+
+  xlab("PC1 (38.9%)")+
+  ylab("PC2 (15.8%)")+
+  stat_ellipse()
+
+# Hulls for individuals 
+hulls_id <- comp.out_SL %>% 
+  group_by(Individual) %>%
+  slice(chull(PC1,PC2))
+
+
+# swim speed vs mouth size 
+# swim speed (x) 
+# mouth size (y)
+
+# regression but plot line by individual 
+# try center and scaling using z score 
+
+ggplot(all.data, aes(x=VELPG,y=PG,group=Individual,color=Individual))+
+  geom_point()+
+  geom_smooth(method=lm)
+
+# pca histograms for each axis - multivariate 
+# PLS for swimming vs feeding 
 
