@@ -228,16 +228,215 @@ leveneTest(all.data$VELpreycapture~all.data$Individual) # p < 0.0001
 # We want to be sure that size does not influence any variables 
 ggboxplot(all.data, x = "Individual", y = "SL", add = "point")
 
+# Check assumptions
+# Outliers
 SL <- all.data %>%  # no extreme outliers 
   group_by(Individual) %>%
   identify_outliers(SL)
 
+# Normality 
 shapiro.test(all.data$SL) # p = 0.01 
-
 ggqqplot(all.data$SL) # looks ok 
 
-mod.SL <- lmer(PG~SL+(1|Individual),data=all.data)
-summary(mod.SL)
+# General linear mixed model 
+# Some variables are influenced by size... we will need to scale variables by standard length
+PGmod.SL <- lmer(PG~SL+(1|Individual),data=all.data)
+summary(PGmod.SL) 
 
-summary(glm(PG~Individual,data=all.data))
+TTOmod.SL <- lmer(TTO~SL+(1|Individual),data=all.data)
+summary(TTOmod.SL)
+
+TTCmod.SL <- lmer(TTC~SL+(1|Individual),data=all.data)
+summary(TTCmod.SL) 
+
+PPROTmod.SL <- lmer(PPROT~SL+(1|Individual),data=all.data)
+summary(PPROTmod.SL) # p = 0.006
+
+PPROTVELmod.SL <- lmer(PPROTVEL~SL+(1|Individual),data=all.data)
+summary(PPROTVELmod.SL) # p = 0.02
+
+tPPROTmod.SL <- lmer(tPPROT~SL+(1|Individual),data=all.data)
+summary(tPPROTmod.SL)
+
+VELPGmod.SL <- lmer(VELPG~SL+(1|Individual),data=all.data)
+summary(VELPGmod.SL) # p = 0.002
+
+maxVELmod.SL <- lmer(maxVEL~SL+(1|Individual),data=all.data)
+summary(maxVELmod.SL) # p = 0.02
+
+tmaxVELmod.SL <- lmer(tmaxVEL~SL+(1|Individual),data=all.data)
+summary(tmaxVELmod.SL)
+
+ACCPGmod.SL <- lmer(ACCPG~SL+(1|Individual),data=all.data)
+summary(ACCPGmod.SL)
+
+HLmod.SL <- lmer(H_L_ratio~SL+(1|Individual),data=all.data)
+summary(HLmod.SL)
+
+AImod.SL <- lmer(AI~SL+(1|Individual),data=all.data)
+summary(AImod.SL)
+
+ingestedmod.SL <- lmer(ingested_volume~SL+(1|Individual),data=all.data)
+summary(ingestedmod.SL) # p = 0.005
+
+PPDiopenmod.SL <- lmer(PPDiopen~SL+(1|Individual),data=all.data)
+summary(PPDiopenmod.SL) 
+
+timeatcapturemod.SL <- lmer(timeatcapture~SL+(1|Individual),data=all.data)
+summary(timeatcapturemod.SL)
+
+VELpreycapturemod.SL <- lmer(VELpreycapture~SL+(1|Individual),data=all.data)
+summary(VELpreycapturemod.SL) # p = 0.002
+
+# Diagnostic plots ---- 
+
+# Use histogram overlaps 
+ggplot(data=all.data, aes(x=PG ,group=Individual, fill=Individual)) +
+  geom_density(adjust=1.5, alpha=.4)+
+  theme_classic()+
+  ylab("Density")+
+  xlab("Peak gape (cm)")
+
+ggplot(data=all.data, aes(x=TTO ,group=Individual, fill=Individual)) +
+  geom_density(adjust=1.5, alpha=.4)+
+  theme_classic()+
+  ylab("Density")+
+  xlab("Duration of mouth opening (ms)")
+
+ggplot(data=all.data, aes(x=TTC ,group=Individual, fill=Individual)) +
+  geom_density(adjust=1.5, alpha=.4) +
+  theme_classic()+
+  ylab("Density")+
+  xlab("Duration of mouth closing (ms)")
+
+
+ggplot(data=all.data, aes(x=PPROT ,group=Individual, fill=Individual)) +
+  geom_density(adjust=1.5, alpha=.4) +
+  theme_classic()+
+  ylab("Density")+
+  xlab("Peak protrusion (cm)")
+
+
+ggplot(data=all.data, aes(x=PPROTVEL ,group=Individual, fill=Individual)) +
+  geom_density(adjust=1.5, alpha=.4)+
+  theme_classic()+
+  ylab("Density") +
+  xlab("Protrusion velocity (cm/s)")
+
+
+ggplot(data=all.data, aes(x=tPPROT ,group=Individual, fill=Individual)) +
+  geom_density(adjust=1.5, alpha=.4)+
+  theme_classic()+
+  ylab("Density")+
+  xlab("Timing of peak protrusion (ms)")
+
+ggplot(data=all.data, aes(x=VELPG ,group=Individual, fill=Individual)) +
+  geom_density(adjust=1.5, alpha=.4)+
+  theme_classic()+
+  ylab("Density") +
+  xlab("Velocity at peak gape (cm/s)")
+
+
+ggplot(data=all.data, aes(x=maxVEL ,group=Individual, fill=Individual)) +
+  geom_density(adjust=1.5, alpha=.4)+
+  theme_classic()+
+  ylab("Density") +
+  xlab("Maximum velocity (cm/s)")
+
+
+ggplot(data=all.data, aes(x=tmaxVEL ,group=Individual, fill=Individual)) +
+  geom_density(adjust=1.5, alpha=.4)+
+  theme_classic()+
+  ylab("Density")+
+  xlab("Timing of maximum velocity (ms)")
+
+
+ggplot(data=all.data, aes(x=ACCPG ,group=Individual, fill=Individual)) +
+  geom_density(adjust=1.5, alpha=.4)+
+  theme_classic()+
+  ylab("Density")+
+  labs(x=bquote('Acceleration at peak gape'~(cm/s^2)))
+
+ggplot(data=all.data, aes(x=H_L_ratio ,group=Individual, fill=Individual)) +
+  geom_density(adjust=1.5, alpha=.4)+
+  theme_classic()+
+  ylab("Density")+
+  xlab("Height:Length of volume")
+
+
+ggplot(data=all.data, aes(x=AI ,group=Individual, fill=Individual)) +
+  geom_density(adjust=1.5, alpha=.4)+
+  theme_classic()+
+  ylab("Density")+
+  xlab("Accuracy Index")
+
+
+ggplot(data=all.data, aes(x=ingested_volume ,group=Individual, fill=Individual)) +
+  geom_density(adjust=1.5, alpha=.4)+
+  theme_classic()+
+  ylab("Density") +
+  labs(x=bquote('Ingested volume'~(cm^3)))
+
+
+ggplot(data=all.data, aes(x=PPDiopen ,group=Individual, fill=Individual)) +
+  geom_density(adjust=1.5, alpha=.4)+
+  theme_classic()+
+  ylab("Density") +
+  xlab("Predator-prey distance at mouth opening (cm)")
+
+
+ggplot(data=all.data, aes(x=timeatcapture ,group=Individual, fill=Individual)) +
+  geom_density(adjust=1.5, alpha=.4)+
+  theme_classic()+
+  ylab("Density") +
+  xlab("Time at capture relative to peak gape (ms)")
+
+
+ggplot(data=all.data, aes(x=VELpreycapture ,group=Individual, fill=Individual)) +
+  geom_density(adjust=1.5, alpha=.4)+
+  theme_classic()+
+  ylab("Density") +
+  xlab("Velocity at prey capture (cm/s)")
+
+
+
+
+
+# Coefficient of variation by individual ----
+
+# Write custom function 
+CoVar <- function(mean,sd){
+  CV1 <- ((sd)/(mean))
+  CV <- CV1 * 100
+  return(abs(CV))
+}
+
+# use data frame 'means' to supply the mean and sd 
+PG <- CoVar(mean = means$mean[means$variable=="PG"],sd=means$sd[means$variable=="PG"])
+TTO <- CoVar(mean = means$mean[means$variable=="TTO"],sd=means$sd[means$variable=="TTO"])
+TTC <- CoVar(mean = means$mean[means$variable=="TTC"],sd=means$sd[means$variable=="TTC"])
+PPROT <- CoVar(mean = means$mean[means$variable=="PPROT"],sd=means$sd[means$variable=="PPROT"])
+PPROTVEL <- CoVar(mean = means$mean[means$variable=="PPROTVEL"],sd=means$sd[means$variable=="PPROTVEL"])
+tPPROT <- CoVar(mean = means$mean[means$variable=="tPPROT"],sd=means$sd[means$variable=="tPPROT"])
+VELPG <- CoVar(mean = means$mean[means$variable=="VELPG"],sd=means$sd[means$variable=="VELPG"])
+maxVEL <- CoVar(mean = means$mean[means$variable=="maxVEL"],sd=means$sd[means$variable=="maxVEL"])
+tmaxVEL <- CoVar(mean = means$mean[means$variable=="tmaxVEL"],sd=means$sd[means$variable=="tmaxVEL"])
+ACCPG <- CoVar(mean = means$mean[means$variable=="ACCPG"],sd=means$sd[means$variable=="ACCPG"])
+H_L_ratio <- CoVar(mean = means$mean[means$variable=="H_L_ratio"],sd=means$sd[means$variable=="H_L_ratio"])
+AI <- CoVar(mean = means$mean[means$variable=="AI"],sd=means$sd[means$variable=="AI"])
+ingested_volume <- CoVar(mean = means$mean[means$variable=="ingested_volume"],sd=means$sd[means$variable=="ingested_volume"])
+PPDiopen <- CoVar(mean = means$mean[means$variable=="PPDiopen"],sd=means$sd[means$variable=="PPDiopen"])
+timeatcapture <- CoVar(mean = means$mean[means$variable=="timeatcapture"],sd=means$sd[means$variable=="timeatcapture"])
+VELpreycapture <- CoVar(mean = means$mean[means$variable=="VELpreycapture"],sd=means$sd[means$variable=="VELpreycapture"])
+
+# Merge into a dataframe
+CV <- data.frame(rbind(PG,TTO,TTC,PPROT,PPROTVEL,tPPROT,VELPG,maxVEL,tmaxVEL,ACCPG,H_L_ratio,AI,ingested_volume,PPDiopen,timeatcapture,VELpreycapture))
+
+# rename the columns by individual 
+names(CV)[1] <- "LAUR01"
+names(CV)[2] <- "LAUR02"
+names(CV)[3] <- "LAUR03"
+names(CV)[4] <- "LAUR04"
+names(CV)[5] <- "LAUR05"
+
 
