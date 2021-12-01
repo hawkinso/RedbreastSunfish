@@ -17,6 +17,8 @@ library(car)
 library(plyr)
 library(reshape2)
 library(lmer4)
+library(RColorBrewer)
+library(lmerTest)
 
 # Read in data 
 data <- read.csv("RedBreast_2021.csv")
@@ -436,95 +438,174 @@ names(CV)[3] <- "LAUR03"
 names(CV)[4] <- "LAUR04"
 names(CV)[5] <- "LAUR05"
 
-# PCA 
+# PCA ----
 
-PCA_data <- data.frame()
-SL_transformed_num$Population <- as.numeric(SL_transformed$Population)
-SL_transformed_num$Individual <- as.numeric(SL_transformed$Individual)
+PCA_data <- all.data
+PCA_data$Individual <- as.numeric(all.data$Individual)
 
 # Export data for PCA
-write_csv(SL_transformed_num,file="PCA_data_Bluegill_transformed.csv")
+write_csv(PCA_data,file="PCA_data_Redbreast2021.csv")
 
 # Read in data
-pca.data_SL <- read.csv(file = "PCA_data_Bluegill_transformed.csv")
-pca.data_SL$Population <- as.factor(all.data$Population)
-pca.data_SL$Individual <- as.factor(all.data$Individual)
+pca.data <- read.csv(file = "PCA_data_Redbreast2021.csv")
+pca.data$Individual <- as.factor(all.data$Individual)
 
 # Subset the feeding and locomotion variables out 
-pca.data_SL_mod <- pca.data_SL %>%
-  dplyr::select(PG_resid,TTO_resid,TTC_resid,PPROT_resid,PPROTVEL_resid,tPPROT_resid,
-                VELPG_resid,maxVEL_resid,tmaxVEL_resid,ACCPG_resid)
+pca.data_mod <- pca.data %>%
+  dplyr::select(SL,PG,TTO,TTC,PPROT,PPROTVEL,tPPROT,VELPG,maxVEL,tmaxVEL,ACCPG)
 
 # Run PCA 
-results_SL <- prcomp(pca.data_SL_mod,scale=TRUE)
+results <- prcomp(pca.data_mod,scale=TRUE)
 
 #display principal components
-comp_SL <- results_SL$x
+comp <- results$x
 
 #calculate total variance explained by each principal component
-var_SL <- results_SL$sdev^2
-var_results_SL <- round(var_SL/sum(var_SL)*100,1)
+var <- results$sdev^2
+var_results <- round(var/sum(var)*100,1)
 
 # Make biplot 
-biplot(results_SL,scale=0)
+biplot(results,scale=0)
 
 # Save results from components analysis ad data frame (PC)
-comp.out_SL <- as.data.frame(comp_SL)
+comp.out <- as.data.frame(comp)
 
 # Make Individual and Population factors again 
-comp.out_SL$Population <- as.factor(all.data$Population)
-comp.out_SL$Individual <- as.factor(all.data$Individual)
-
-## quick plots of PC1 and PC2 
-autoplot(prcomp(pca.data_SL_mod),data=pca.data_SL,colour="Population",label=TRUE)
+comp.out$Individual <- as.factor(all.data$Individual)
 
 # Get the PCA output and check out other stats/properties of the components 
-output.var_SL <- get_pca_var(results_SL) # get coordinates
-fviz_pca_var(results_SL)
-fviz_eig(results_SL) # skree plot : pc under 10% difference between components not as important 
+output.var <- get_pca_var(results) # get coordinates
+fviz_pca_var(results)
+fviz_eig(results) # skree plot : pc under 10% difference between components not as important 
 
 # get the loading scores for each component. In prcomp(), loading scores are referred to as "rotation"
-load.score_SL <- results_SL$rotation[,2] # loading by PC of choice
-variable.score_SL <- abs(load.score_SL) # magnitude of loadings
-ranked.score_SL <- sort(variable.score_SL,decreasing=TRUE)
-top.ten_SL <- names(ranked.score_SL[1:10])
-corrplot(output.var_SL$cos2,is.corr=TRUE) # See what variables are explaining variation 
-corrplot(output.var_SL$contrib,is.corr=FALSE)
-fviz_contrib(results_SL, choice="var",axes=1, top=10) # See what variables are explaining variation 
-fviz_contrib(results_SL, choice="var",axes=2, top=10)
+load.score <- results$rotation[,1] # loading by PC of choice
+variable.score <- abs(load.score) # magnitude of loadings
+ranked.score <- sort(variable.score,decreasing=TRUE)
+top.ten <- names(ranked.score[1:10])
+fviz_contrib(results, choice="var",axes=1, top=10) # See what variables are explaining variation 
+fviz_contrib(results, choice="var",axes=2, top=10)
 
 ## Graph 
 # Rename the factors 
-levels(comp.out_SL$Population) <- c("Healthy","Damaged")
+levels(comp.out$Individual) <- c("LAUR01","LAUR02","LAUR03","LAUR04","LAUR05")
 
-# Add in "success" data 
-comp.out_SL$Miss <- data$Miss
-
-ggplot(comp.out_SL,aes(x=PC1,y=PC2,color=Population,shape=Population,group=Population)) +
+ggplot(comp.out,aes(x=PC1,y=PC2,color=Individual,group=Individual)) +
   geom_point()+
   scale_color_brewer(palette="Paired")+
   theme_classic()+
-  xlab("PC1 (38.9%)")+
-  ylab("PC2 (15.8%)")+
+  xlab("PC1 (47.8%)")+
+  ylab("PC2 (22.3%)")+
   stat_ellipse()
 
-# Hulls for individuals 
-hulls_id <- comp.out_SL %>% 
-  group_by(Individual) %>%
-  slice(chull(PC1,PC2))
+## Calculate the distribution of scores for each PC
+fish1.pc1 <- comp.out$PC1[comp.out$Individual=="LAUR01"]
+fish1.pc2 <- comp.out$PC2[comp.out$Individual=="LAUR01"]
+
+fish2.pc1 <- comp.out$PC1[comp.out$Individual=="LAUR02"]
+fish2.pc2 <- comp.out$PC2[comp.out$Individual=="LAUR02"]
+
+fish3.pc1 <- comp.out$PC1[comp.out$Individual=="LAUR03"]
+fish3.pc2 <- comp.out$PC2[comp.out$Individual=="LAUR03"]
+
+fish4.pc1 <- comp.out$PC1[comp.out$Individual=="LAUR04"]
+fish4.pc2 <- comp.out$PC2[comp.out$Individual=="LAUR04"]
+
+fish5.pc1 <- comp.out$PC1[comp.out$Individual=="LAUR05"]
+fish5.pc2 <- comp.out$PC2[comp.out$Individual=="LAUR05"]
+
+PC1_scores <- data.frame(fish1.pc1,fish2.pc1,
+                        fish3.pc1,fish4.pc1,
+                        fish5.pc1)
+PC1_scores <- cbind(stack(PC1_scores[,1:5]))
+PC1_scores$ind <- comp.out$Individual
+
+PC2_scores <- data.frame(fish1.pc2,fish2.pc2,
+                         fish3.pc2,fish4.pc2,
+                         fish5.pc2)
+PC2_scores <- cbind(stack(PC2_scores[,1:5]))
+PC2_scores$ind <- comp.out$Individual
+
+ggplot(data=PC1_scores, aes(x=values ,group=ind, fill=ind)) +
+  geom_density(adjust=1.5, alpha=.4)+
+  theme_classic()+
+  ylab("Density") +
+  xlab("PC1 scores")+
+  scale_fill_discrete(name = "Individual")
+
+ggplot(data=PC2_scores, aes(x=values ,group=ind, fill=ind)) +
+  geom_density(adjust=1.5, alpha=.4)+
+  theme_classic()+
+  ylab("Density") +
+  xlab("PC2 scores")+
+  scale_fill_discrete(name = "Individual")
 
 
-# swim speed vs mouth size 
-# swim speed (x) 
-# mouth size (y)
+# Get mean PC scores for each fish 
+ddply(.data = PC1_scores,.variables = c("ind"),summarize, mean=mean(values),sd=sd(values))
+ddply(.data = PC2_scores,.variables = c("ind"),summarize, mean=mean(values),sd=sd(values))
 
-# regression but plot line by individual 
-# try center and scaling using z score 
+# Taking a look at integration ---- 
+# Remind ourselves of the density plots 
+ggplot(data=all.data, aes(x=PG ,group=Individual, fill=Individual)) +
+  geom_density(adjust=1.5, alpha=.4)+
+  theme_classic()+
+  ylab("Density")+
+  xlab("Peak gape (cm)")
 
-ggplot(all.data, aes(x=VELPG,y=PG,group=Individual,color=Individual))+
+ggplot(data=all.data, aes(x=VELPG ,group=Individual, fill=Individual)) +
+  geom_density(adjust=1.5, alpha=.4)+
+  theme_classic()+
+  ylab("Density")+
+  xlab("Velocity at peak gape (cm)")
+
+ggplot(data=all.data, aes(x=AI ,group=Individual, fill=Individual)) +
+  geom_density(adjust=1.5, alpha=.4)+
+  theme_classic()+
+  ylab("Density")+
+  xlab("Accuracy Index")
+
+# We need to center and scale the data to remove any effect of SL 
+all.data$PG_scale <- scale(all.data$PG,center = T,scale = T)
+all.data$VELPG_scale <- scale(all.data$VELPG,center = T,scale = T)
+
+# In the context of integration (using two or more systems at the same time), 
+  # We are interested in the integration of feeding and swimming 
+# To begin to look at this, we can look at how swim speed predicts mouth size 
+
+# Rough glance at the data 
+ggplot(all.data, aes(x=VELPG_scale,y=PG_scale,group=Individual,color=Individual))+
   geom_point()+
-  geom_smooth(method=lm)
+  geom_smooth(method=lm)+
+  theme_classic()+
+  scale_color_brewer(palette = "Paired")+
+  xlab("Velocity at peak gape (cm/s)")+
+  ylab("Peak gape (cm)")
 
-# pca histograms for each axis - multivariate 
+# It looks like there are enough outliers for each individual to make another line 
+# Are individuals using two different approaches? 
+
+# Use ifelse to make a new column that separates the "small mouth" vs "large mouth" approach 
+all.data$line <- ifelse(all.data$PG_scale < 0, "Small mouth","Large mouth")
+
+small.mouth <- all.data %>%
+  select(Individual,VELPG_scale,PG_scale,line)%>%
+  filter(line=="Small mouth")
+
+large.mouth <- all.data %>%
+  select(Individual,VELPG_scale,PG_scale,line)%>%
+  filter(line=="Large mouth")
+
+# Now plot again, this time taking into account the two lines 
+ggplot()+
+  geom_point(large.mouth, mapping=aes(x=VELPG_scale,y=PG_scale,group=Individual,color=Individual))+
+  geom_smooth(large.mouth,method = "lm",se=F,mapping=aes(x=VELPG_scale,y=PG_scale,group=Individual,color=Individual))+
+  geom_point(small.mouth, mapping=aes(x=VELPG_scale,y=PG_scale,group=Individual,color=Individual))+
+geom_smooth(small.mouth,method = "lm",se=F,mapping=aes(x=VELPG_scale,y=PG_scale,group=Individual,color=Individual))+
+  theme_classic()+
+  xlab("Velocity at peak gape (cm/s)")+
+  ylab("Peak gape (cm)")
+  
+
 # PLS for swimming vs feeding 
 
