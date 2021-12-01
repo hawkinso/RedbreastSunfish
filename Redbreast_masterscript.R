@@ -19,6 +19,7 @@ library(reshape2)
 library(lmer4)
 library(RColorBrewer)
 library(lmerTest)
+library(reshape2)
 
 # Read in data 
 data <- read.csv("RedBreast_2021.csv")
@@ -241,7 +242,7 @@ shapiro.test(all.data$SL) # p = 0.01
 ggqqplot(all.data$SL) # looks ok 
 
 # General linear mixed model 
-# Some variables are influenced by size... we will need to scale variables by standard length
+# Some variables are influenced by size... we will need to scale variables by standard length??
 PGmod.SL <- lmer(PG~SL+(1|Individual),data=all.data)
 summary(PGmod.SL) 
 
@@ -438,6 +439,18 @@ names(CV)[3] <- "LAUR03"
 names(CV)[4] <- "LAUR04"
 names(CV)[5] <- "LAUR05"
 
+CV$Variables <- c("PG","TTO","TTC","PPROT","PPROTVEL","tPPROT","VELPG","maxVEL","tmaxVEL","ACCPG","H_L_ratio","AI",
+                  "ingested_volume","PPDiopen","timeatcapture","VELpreycapture")
+
+
+# Melt data frame
+CV_melt <- melt(CV,id.vars = "Variables", measure.vars = c("LAUR01","LAUR02","LAUR03","LAUR04","LAUR05"))
+names(CV_melt)[2] <- "Individual"
+names(CV_melt)[3] <- "CV"
+
+# Export data 
+write_csv(CV_melt,file = "Redbreast_CV_2021.csv",append = TRUE)
+
 # PCA ----
 
 PCA_data <- all.data
@@ -598,12 +611,15 @@ large.mouth <- all.data %>%
 
 # Now plot again, this time taking into account the two lines 
 # export plot as pdf 
-pdf(file="integration.pdf")
+names(small.mouth)[4] <- "Strategy"
+names(large.mouth)[4] <- "Strategy"
+
+pdf(file="scaled_integration.pdf")
 
 ggplot()+
-  geom_point(large.mouth, mapping=aes(x=VELPG_scale,y=PG_scale,group=Individual,color=Individual))+
+  geom_point(large.mouth, mapping=aes(x=VELPG_scale,y=PG_scale,group=Individual,color=Individual,shape=Strategy))+
   geom_smooth(large.mouth,method = "lm",se=F,mapping=aes(x=VELPG_scale,y=PG_scale,group=Individual,color=Individual))+
-  geom_point(small.mouth, mapping=aes(x=VELPG_scale,y=PG_scale,group=Individual,color=Individual))+
+  geom_point(small.mouth, mapping=aes(x=VELPG_scale,y=PG_scale,group=Individual,color=Individual,shape=Strategy))+
 geom_smooth(small.mouth,method = "lm",se=F,mapping=aes(x=VELPG_scale,y=PG_scale,group=Individual,color=Individual))+
   theme_classic()+
   xlab("Velocity at peak gape (cm/s)")+
@@ -611,7 +627,97 @@ geom_smooth(small.mouth,method = "lm",se=F,mapping=aes(x=VELPG_scale,y=PG_scale,
 
 dev.off()
 
-# PLS for swimming vs feeding ??
+
+# center and scale by body size BY INDIVIDUAL 
+# subset by fish 
+fish.1.scale <- all.data %>%
+  select(Individual,PG,VELPG,line)%>%
+  filter(Individual=="LAUR01")
+
+fish.1.scale$PG_scale_ind <- scale(fish.1.scale$PG,center = T,scale = T)
+fish.1.scale$VELPG_scale_ind <- scale(fish.1.scale$VELPG,center = T,scale = T)
+
+fish.2.scale <- all.data %>%
+  select(Individual,PG,VELPG,line)%>%
+  filter(Individual=="LAUR02")
+
+fish.2.scale$PG_scale_ind <- scale(fish.2.scale$PG,center = T,scale = T)
+fish.2.scale$VELPG_scale_ind <- scale(fish.2.scale$VELPG,center = T,scale = T)
+
+fish.3.scale <- all.data %>%
+  select(Individual,PG,VELPG,line)%>%
+  filter(Individual=="LAUR03")
+
+fish.3.scale$PG_scale_ind <- scale(fish.3.scale$PG,center = T,scale = T)
+fish.3.scale$VELPG_scale_ind <- scale(fish.3.scale$VELPG,center = T,scale = T)
+
+fish.4.scale <- all.data %>%
+  select(Individual,PG,VELPG,line)%>%
+  filter(Individual=="LAUR04")
+
+fish.4.scale$PG_scale_ind <- scale(fish.4.scale$PG,center = T,scale = T)
+fish.4.scale$VELPG_scale_ind <- scale(fish.4.scale$VELPG,center = T,scale = T)
+
+fish.5.scale <- all.data %>%
+  select(Individual,PG,VELPG,line)%>%
+  filter(Individual=="LAUR05")
+
+fish.5.scale$PG_scale_ind <- scale(fish.5.scale$PG,center = T,scale = T)
+fish.5.scale$VELPG_scale_ind <- scale(fish.5.scale$VELPG,center = T,scale = T)
+
+# Make data frame 
+all.data.ind <- data.frame(rbind(fish.1.scale,fish.2.scale,fish.3.scale,fish.4.scale,fish.5.scale))
+names(all.data.ind)[4] <- "Strategy"
+
+# Subset data into categories 
+small.mouth.ind <- all.data.ind %>%
+  select(Individual,VELPG_scale_ind,PG_scale_ind,line)%>%
+  filter(line=="Small mouth")
+
+large.mouth.ind <- all.data.ind %>%
+  select(Individual,VELPG_scale_ind,PG_scale_ind,line)%>%
+  filter(line=="Large mouth")
+
+# Graph again 
+names(small.mouth.ind)[4] <- "Strategy"
+names(large.mouth.ind)[4] <- "Strategy"
+
+pdf(file="scaled_byindividual_integration.pdf")
+ggplot()+
+  geom_point(large.mouth.ind, mapping=aes(x=VELPG_scale_ind,y=PG_scale_ind,group=Individual,color=Individual,shape=Strategy))+
+  geom_smooth(large.mouth.ind,method = "lm",se=F,mapping=aes(x=VELPG_scale_ind,y=PG_scale_ind,group=Individual,color=Individual))+
+  geom_point(small.mouth.ind, mapping=aes(x=VELPG_scale_ind,y=PG_scale_ind,group=Individual,color=Individual,shape=Strategy))+
+  geom_smooth(small.mouth.ind,method = "lm",se=F,mapping=aes(x=VELPG_scale_ind,y=PG_scale_ind,group=Individual,color=Individual))+
+  theme_classic()+
+  xlab("Velocity at peak gape (cm/s)")+
+  ylab("Peak gape (cm)")
+dev.off()
+
+# Now graph with all small mouth together and all large mouth together 
+
+ggplot()+
+  geom_point(large.mouth.ind, mapping=aes(x=VELPG_scale_ind,y=PG_scale_ind,shape=Strategy))+
+  geom_smooth(large.mouth.ind,method = "lm",se=F,mapping=aes(x=VELPG_scale_ind,y=PG_scale_ind,color=Strategy))+
+  scale_color_brewer(palette="Paired")+
+  geom_point(small.mouth.ind, mapping=aes(x=VELPG_scale_ind,y=PG_scale_ind,shape=Strategy))+
+  geom_smooth(small.mouth.ind,method = "lm",se=F,mapping=aes(x=VELPG_scale_ind,y=PG_scale_ind,color=Strategy))+
+  theme_classic()+
+  xlab("Velocity at peak gape (cm/s)")+
+  ylab("Peak gape (cm)")
 
 
+# General linear mixed model with individual scaled values 
+# Strategy as a fixed effect, individual as random effect 
+
+PG_mod <- lmer(PG_scale_ind~Strategy + (1|Individual), data=all.data.ind)
+summary(PG_mod)
+anova(PG_mod)
+
+VELPG_mod <- lmer(VELPG_scale_ind~Strategy + (1|Individual), data=all.data.ind)
+summary(VELPG_mod)
+anova(VELPG_mod)
+
+# Future work 
+# Partial least squares for swimming vs feeding ??
+# Figure it out 
 
