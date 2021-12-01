@@ -597,6 +597,9 @@ large.mouth <- all.data %>%
   filter(line=="Large mouth")
 
 # Now plot again, this time taking into account the two lines 
+# export plot as pdf 
+pdf(file="integration.pdf")
+
 ggplot()+
   geom_point(large.mouth, mapping=aes(x=VELPG_scale,y=PG_scale,group=Individual,color=Individual))+
   geom_smooth(large.mouth,method = "lm",se=F,mapping=aes(x=VELPG_scale,y=PG_scale,group=Individual,color=Individual))+
@@ -605,7 +608,10 @@ geom_smooth(small.mouth,method = "lm",se=F,mapping=aes(x=VELPG_scale,y=PG_scale,
   theme_classic()+
   xlab("Velocity at peak gape (cm/s)")+
   ylab("Peak gape (cm)")
-  
 
-# PLS for swimming vs feeding 
+dev.off()
+
+# PLS for swimming vs feeding ??
+
+
 
